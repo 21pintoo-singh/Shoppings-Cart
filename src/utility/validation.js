@@ -11,9 +11,6 @@ function isValidBody(value){
     return Object.keys(value).length >0
 }
 
-// const isValidObjectId = function (objectId) {
-//     return ObjectId.isValid(objectId)
-// };
 
 
 
