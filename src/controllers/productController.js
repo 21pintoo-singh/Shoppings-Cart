@@ -124,13 +124,11 @@ const updateProduct=async(req,res)=>{
         if(currencyId||currencyId===""){
             currencyId=currencyId.trim()
             if(!validator.isValid(currencyId))return res.status(400).send({status:false, message:"currencyId is empty"})
-            // if(currencyId!="INR")return res.status(400).send({status : false, message :"you entered a invalid currencyId---> currencyId should be INR"})
             data.currencyId=currencyId
         }
         if(currencyFormat||currencyFormat===""){
             currencyFormat=currencyFormat.trim()
             if(!validator.isValid(currencyFormat))return res.status(400).send({status:false, message:"currencyFormat is empty"})
-            // if(currencyFormat!="₹")return res.status(400).send({status : false, message :"you entered a invalid currencyFormat--> currencyFormat should be ₹"})
             data.currencyFormat=currencyFormat
         }
         if(isFreeShipping||isFreeShipping===""){
