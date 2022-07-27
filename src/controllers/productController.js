@@ -77,6 +77,54 @@ const createProduct=async (req,res)=>{
 }}
 
 
+
+
+const getProduct = async function (req, res) {
+      
+
+      try {
+          // 👉 fet query data 
+          const query = req.query;
+          const obj = {}
+          const sort = {}
+          if (!vfy.isEmptyObject(query)) {
+              let availableSizes = query.size
+              let title = query.name
+              let priceGreaterThan = query.priceGreaterThan
+              let priceLessThan = query.priceLessThan
+              let priceSort = query.priceSort
+  
+              // if (availableSizes) { obj.availableSizes = availableSizes }
+              if (!vfy.isEmptyVar(availableSizes)) { obj.availableSizes = { $in: availableSizes } }
+  
+              if (!vfy.isEmptyVar(title)) { obj.title = { $regex: title, $options: "i" } }
+  
+              if (!vfy.isEmptyVar(priceGreaterThan) && !vfy.isEmptyVar(priceLessThan)) {
+                  obj.price = { $gte: priceGreaterThan, $lte: priceLessThan }
+              } else if (!vfy.isEmptyVar(priceGreaterThan)) {
+                  obj.price = { $gte: priceGreaterThan }
+              }
+              else if (!vfy.isEmptyVar(priceLessThan)) {
+                  obj.price = { $lte: priceLessThan }
+              }
+  
+              if (priceSort) {
+                  if (priceSort != '-1' && priceSort != '1') return res.status(500).send({ status: false, Message: "priceSort only accept -1 and 1 as value" })
+                  sort.price = Number(priceSort)
+              }
+  
+          }
+          obj.isDeleted = false
+          const getProductsList = await productModel.find(obj).sort(sort)
+          if (!getProductsList || getProductsList.length == 0) return res.status(404).send({ status: false, Message: `product is not available in this moment try again later` })
+          return res.status(200).send({ status: true, Message: `✅ ${getProductsList.length} Product${getProductsList.length == 1 ? " is" : "s are"} Matched`, data: getProductsList })
+  
+      } catch (err) {
+          res.status(500).send({ status: false, Message: err.Message })
+      }
+  
+  }
+
 const getProductById=async(req,res)=>{
     try{
         let productId=req.params.productId
@@ -188,4 +236,4 @@ const deleteById=async(req,res)=>{
     }
 }
 
-module.exports={createProduct,getProductById,updateProduct,deleteById}
+module.exports={createProduct,getProductById,updateProduct,deleteById,getProduct}
