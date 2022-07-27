@@ -158,6 +158,7 @@ const getUserById=async (req,res)=>{
 
 let updateUser = async  (req, res)=> {
     let userId = req.params.userId
+    console.log("functionup")
 
     if (!mongoose.isValidObjectId(userId))return res.status(400).send({ status: false, message: "You entered a Invalid userId in params" })
     const checkUserId=await userModel.findOne({_id:userId})
