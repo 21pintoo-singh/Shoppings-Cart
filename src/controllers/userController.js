@@ -60,7 +60,7 @@ const createUser=async (req,res)=>{
 
                 if (!validator.isValid(address.shipping.pincode))return res.status(400).send({status: false,Message: "Please provide your pin code in shipping address"})
 
-                if (!/^\d{6}$/.test(address.shipping.pincode))return res.status(400).send({status: false,message: "Pincode should in six digit Number"})
+                if (!/^[1-9][0-9]{5}$/.test(address.shipping.pincode))return res.status(400).send({status: false,message: "Shipping Pincode should in six digit Number"})
             } else {
                 return res.status(400).send({ status: false, message: "please provide shipping address" })
             }
@@ -71,7 +71,8 @@ const createUser=async (req,res)=>{
                 if (!validator.isValid(address.billing.city))return res.status(400).send({status: false,Message: "Please provide your city name in billing address"})
 
                 if (!validator.isValid(address.billing.pincode))return res.status(400).send({status: false,Message: "Please provide your pin code in billing address"})
-                if (!/^\d{6}$/.test(address.billing.pincode))return res.status(400).send({status: false,message: "Pincode should in six digit Number",})
+
+                if (!/^[1-9][0-9]{5}$/.test(address.billing.pincode))return res.status(400).send({status: false,message: "Billing Pincode should in six digit Number",})
             } else {
                 return res.status(400).send({ status: false, message: "please provide billing address" })
             }
@@ -158,34 +159,36 @@ const getUserById=async (req,res)=>{
 let updateUser = async  (req, res)=> {
     let userId = req.params.userId
 
-    if (!mongoose.isValidObjectId(userId))
-        return res.status(400).send({ status: false, message: "You entered a Invalid userId in params" })
-
+    if (!mongoose.isValidObjectId(userId))return res.status(400).send({ status: false, message: "You entered a Invalid userId in params" })
+    const checkUserId=await userModel.findOne({_id:userId})
+    if(!checkUserId)return res.status(404).send({ status: false, message: "user not found" })
     // if (userId != req.userId)
     //     return res.status(400).send({ status: false, message: "Authorisation Failed--> you are not allowed to modify another acoount" })
 
     let data = req.body
 
     // let email=data.email
-    if (data.fname) {
-        if (data.fname.trim().length==0)
+    if (data.fname || data.fname==="") {
+        data.fname=data.fname.trim()
+        if (!validator.isValid(data.fname))
             return res.status(400).send({ status: false, message: "fname should not be empty" })}
 
-    if (data.lname) {
-        if (data.lname == null)
+    if (data.lname || data.lname==="") {
+        data.lname=data.lname.trim()
+        if (!validator.isValid(data.lname))
             return res.status(400).send({ status: false, message: "lname should not be empty" })}
-    if (data.email) {
-    let findEmail = await userModel.findOne({ email: data.email })
+    
+    if (data.email || data.email==="") {
+        data.email=data.email.trim()
+        let findEmail = await userModel.findOne({ email: data.email })
         if (findEmail) {
-            if (findEmail._id != userId)
-
-                return res.status(400).send({ status: false, message: "email is already exists please enter a new emailId " })
+            if (findEmail._id != userId)return res.status(400).send({ status: false, message: "email is already exists please enter a new emailId " })
         }
         if (validator.isValidEmail(data.email) == false) return res.status(400).send({ status: false, message: "You entered a Invalid email" })
 
     }
 
-    if (data.phone) {
+    if (data.phone || data.phone==="") {
         let findPhone = await userModel.findOne({ phone: data.phone })
 
         if (findPhone) {
@@ -233,7 +236,7 @@ let updateUser = async  (req, res)=> {
     //     }
     let profileUrl;
 
-    if (data.profileImage) {
+    if (data.profileImage || data.profileImage==="") {
 
         let uploadImage = await uploadFile(data.profileImage)
 
