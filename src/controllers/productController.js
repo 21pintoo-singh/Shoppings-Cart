@@ -87,7 +87,7 @@ const getProduct = async function (req, res) {
           const query = req.query;
           const obj = {}
           const sort = {}
-          if (!vfy.isEmptyObject(query)) {
+          if (!validator.isValidBody(query)) {
               let availableSizes = query.size
               let title = query.name
               let priceGreaterThan = query.priceGreaterThan
@@ -95,16 +95,16 @@ const getProduct = async function (req, res) {
               let priceSort = query.priceSort
   
               // if (availableSizes) { obj.availableSizes = availableSizes }
-              if (!vfy.isEmptyVar(availableSizes)) { obj.availableSizes = { $in: availableSizes } }
+              if (!validator.isValid(availableSizes)) { obj.availableSizes = { $in: availableSizes } }
   
-              if (!vfy.isEmptyVar(title)) { obj.title = { $regex: title, $options: "i" } }
+              if (!validator.isValid(title)) { obj.title = { $regex: title, $options: "i" } }
   
-              if (!vfy.isEmptyVar(priceGreaterThan) && !vfy.isEmptyVar(priceLessThan)) {
+              if (!validator.isValid(priceGreaterThan) && !vfy.isEmptyVar(priceLessThan)) {
                   obj.price = { $gte: priceGreaterThan, $lte: priceLessThan }
-              } else if (!vfy.isEmptyVar(priceGreaterThan)) {
+              } else if (!validator.isValid(priceGreaterThan)) {
                   obj.price = { $gte: priceGreaterThan }
               }
-              else if (!vfy.isEmptyVar(priceLessThan)) {
+              else if (!validator.isValid(priceLessThan)) {
                   obj.price = { $lte: priceLessThan }
               }
   
