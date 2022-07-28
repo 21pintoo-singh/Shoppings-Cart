@@ -55,16 +55,41 @@ const createProduct=async (req,res)=>{
         objectCreate.style=style
     }
 
+
     let checkSizes=["S", "XS","M","X", "L","XXL", "XL"]
-    if(!availableSizes)return res.status(400).send({status:false,message:"Available Sizes field is Required"})
-    let arrayOfSizes=availableSizes.split(" ")
+
+    if(!availableSizes)
+    return res.status(400).send({status:false,message:"Available Sizes field is Required"})
+
+    let arrayOfSizes=availableSizes.trim().split(",")
+
     for(let i=0;i<arrayOfSizes.length;i++){
-        if(checkSizes.includes(arrayOfSizes[i]))
+        if(checkSizes.includes(arrayOfSizes[i].trim()))
         continue;
         else
         return res.status(400).send({status:false,message:"Sizes should in this ENUM only S/XS/M/X/L/XXL/XL"})
     }
-    objectCreate.availableSizes=arrayOfSizes
+    let newSize=[]
+    for(let j=0;j<arrayOfSizes.length;j++){
+        if(newSize.includes(arrayOfSizes[j].trim()))
+        continue;
+        else
+        newSize.push(arrayOfSizes[j].trim())
+    }
+
+    objectCreate.availableSizes=newSize
+
+
+//     let checkSizes=["S", "XS","M","X", "L","XXL", "XL"]
+//     if(!availableSizes)return res.status(400).send({status:false,message:"Available Sizes field is Required"})
+//     let arrayOfSizes=availableSizes.split(" ")
+//     for(let i=0;i<arrayOfSizes.length;i++){
+//         if(checkSizes.includes(arrayOfSizes[i]))
+//         continue;
+//         else
+//         return res.status(400).send({status:false,message:"Sizes should in this ENUM only S/XS/M/X/L/XXL/XL"})
+//     }
+//     objectCreate.availableSizes=arrayOfSizes
     if(installments){
         if(installmentRegex.test(installments)==false)return res.status(400).send({status:false,message:"Installment  you entered is invalid"})
         objectCreate.installments=installments
@@ -142,6 +167,8 @@ const updateProduct=async(req,res)=>{
         if(!mongoose.isValidObjectId(productId))return res.status(400).send({ status: false, message: `${productId} is not a valid userId` })
         const product=await productModel.findOne({_id:productId ,isDeleted:false})
         if(!product)return res.status(404).send({status:false,message:"productId Not found"})
+        if(product.isDeleted==true)
+        return res.status(400).send({status:false,message:"product is deleted"})
         let temp=req.body
         let {title,description,price,currencyId,currencyFormat,isFreeShipping,productImage,style,availableSizes,installments}=temp
         let data={}
@@ -199,14 +226,23 @@ const updateProduct=async(req,res)=>{
         if(availableSizes||availableSizes===""){
             availableSizes=availableSizes.trim()
             if(!validator.isValid(availableSizes))return res.status(400).send({status:false, message:"availableSizes is empty"})
-            let checkSizes=["S", "XS","M","X", "L","XXL", "XL"]
-            let arrayOfSizes=availableSizes.split(" ")
+            let checkSizes=["S","XS","M","X","L","XXL","XL"]
+            let arrayOfSizes=availableSizes.split(',')
             for(let i=0;i<arrayOfSizes.length;i++){
-                if(checkSizes.includes(arrayOfSizes[i]))continue;
+                if(checkSizes.includes(arrayOfSizes[i].trim()))continue;
                 else return res.status(400).send({status:false,message:"Sizes should in this ENUM only S/XS/M/X/L/XXL/XL"})}
+                let updateSize= await productModel.findOne({_id:productId}).select({_id:0,availableSizes:1})
+    let arraySize=updateSize.availableSizes
+    for(let i=0;i<arrayOfSizes.length;i++){
+        if(arraySize.includes(arrayOfSizes[i].trim()))
+        continue;
+        
+        arraySize.push(arrayOfSizes[i].trim())
 
-            data.availableSizes=arrayOfSizes
+    }
+            data.availableSizes=arraySize
         }
+      
         if(installments||installments===""){
             installments=installments.trim()
             if(!validator.isValid(installments))return res.status(400).send({status:false, message:"installments is empty"})
@@ -214,7 +250,7 @@ const updateProduct=async(req,res)=>{
             data.installments=installments
         }
 //----------------------------------------------------------------------------------------
-        const updateData=await productModel.findOneAndUpdate({_id:productId},{$set:data ,updatedAt:new Date()},{new:true})
+        const updateData=await productModel.findOneAndUpdate({_id:productId,isDeleted:false},{$set:data ,updatedAt:Date.now()},{new:true})
         return res.status(200).send({ status: true, message: "updated successfully", data: updateData })
     }catch(error){
         return res.status(500).send({ status: false, message: error.message })
