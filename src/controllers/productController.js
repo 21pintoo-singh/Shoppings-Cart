@@ -2,6 +2,7 @@ const productModel=require("../models/productModel")
 const mongoose=require("mongoose")
 const validator=require("../utility/validation")
 const aws=require("../utility/awsconfig")
+const { find } = require("../models/productModel")
 
 var nameRegex=/^[a-zA-Z\s]*$/
 var priceRegex=/^[1-9]\d*(\.\d+)?$/
@@ -79,17 +80,6 @@ const createProduct=async (req,res)=>{
 
     objectCreate.availableSizes=newSize
 
-
-//     let checkSizes=["S", "XS","M","X", "L","XXL", "XL"]
-//     if(!availableSizes)return res.status(400).send({status:false,message:"Available Sizes field is Required"})
-//     let arrayOfSizes=availableSizes.split(" ")
-//     for(let i=0;i<arrayOfSizes.length;i++){
-//         if(checkSizes.includes(arrayOfSizes[i]))
-//         continue;
-//         else
-//         return res.status(400).send({status:false,message:"Sizes should in this ENUM only S/XS/M/X/L/XXL/XL"})
-//     }
-//     objectCreate.availableSizes=arrayOfSizes
     if(installments){
         if(installmentRegex.test(installments)==false)return res.status(400).send({status:false,message:"Installment  you entered is invalid"})
         objectCreate.installments=installments
@@ -104,50 +94,75 @@ const createProduct=async (req,res)=>{
 
 
 const getProduct = async function (req, res) {
-      
-
       try {
-          // 👉 fet query data 
-          const query = req.query;
-          const obj = {}
-          const sort = {}
-          if (!validator.isValidBody(query)) {
-              let availableSizes = query.size
-              let title = query.name
-              let priceGreaterThan = query.priceGreaterThan
-              let priceLessThan = query.priceLessThan
-              let priceSort = query.priceSort
-  
-              // if (availableSizes) { obj.availableSizes = availableSizes }
-              if (!validator.isValid(availableSizes)) { obj.availableSizes = { $in: availableSizes } }
-  
-              if (!validator.isValid(title)) { obj.title = { $regex: title, $options: "i" } }
-  
-              if (!validator.isValid(priceGreaterThan) && !validator.isValid(priceLessThan)) {
-                  obj.price = { $gte: priceGreaterThan, $lte: priceLessThan }
-              } else if (!validator.isValid(priceGreaterThan)) {
-                  obj.price = { $gte: priceGreaterThan }
-              }
-              else if (!validator.isValid(priceLessThan)) {
-                  obj.price = { $lte: priceLessThan }
-              }
-  
-              if (priceSort) {
-                  if (priceSort != '-1' && priceSort != '1') return res.status(500).send({ status: false, Message: "priceSort only accept -1 and 1 as value" })
-                  sort.price = Number(priceSort)
-              }
-  
-          }
-          obj.isDeleted = false
-          const getProductsList = await productModel.find(obj).sort(sort)
-          if (!getProductsList || getProductsList.length == 0) return res.status(404).send({ status: false, Message: `product is not available in this moment try again later` })
-          return res.status(200).send({ status: true, Message: `✅ ${getProductsList.length} Product${getProductsList.length == 1 ? " is" : "s are"} Matched`, data: getProductsList })
-  
+        let queryData=req.query
+        if(Object.keys(queryData).length==0){
+            let filterData= await productModel.find({isDeleted:false})
+            return res.status(200).send({status:true,message:"Successful",data:filterData})
+        }
+        let objectFilter={isDeleted:false}
+        let size=queryData.size
+        if(size){
+            let checkSizes=["S", "XS","M","X", "L","XXL", "XL"]
+            let arraySize=size.split(",")
+            for(let i=0;i<arraySize.length;i++){
+                if(checkSizes.includes(arraySize[i]))
+                continue;
+                else
+                return res.status(400).send({status:false,message:"Sizes should in this ENUM only S/XS/M/X/L/XXL/XL"})
+            }
+            objectFilter.availableSizes={}
+            objectFilter.availableSizes.$in=arraySize
+        }
+        let name=queryData.name
+        if(name){
+            if(!validator.isValid(name))
+            return res.status(400).send({status:false,message:"Name should not be empty"})
+            if(nameRegex.test(name)==false)
+            return res.status(400).send({status:false,message:"You entered invalid Name"})
+            objectFilter.title={}
+            objectFilter.title.$regex=name
+            objectFilter.title.$options="i"
+        }
+        let priceArray=[]
+        let priceGreaterThan=queryData.priceGreaterThan
+        if(priceGreaterThan){
+            if(!validator.isValid(priceGreaterThan))
+            return res.status(400).send({status:false,message:"Name should not be empty"})
+            if(priceRegex.test(priceGreaterThan)==false)
+            return res.status(400).send({status:false,message:"You entered invalid priceGreaterThan"})
+            objectFilter.price={}
+            objectFilter.price.$gt=Number(priceGreaterThan)
+        }
+        let priceLessThan=queryData.priceLessThan
+        if(priceLessThan){
+            if(!validator.isValid(priceLessThan))
+            return res.status(400).send({status:false,message:"Name should not be empty"})
+        
+            if(priceRegex.test(priceLessThan)==false)
+            return res.status(400).send({status:false,message:"You entered invalid priceLessThan"})
+    
+            let objectKeys=Object.keys(objectFilter)
+          
+                if(objectKeys.includes("price")){
+                    objectFilter.price.$lt=Number(priceLessThan)
+                } 
+                else{
+                objectFilter.price={}
+                objectFilter.price.$lt=Number(priceLessThan)
+                console.log(typeof (objectFilter.price.$lt))
+               }
+        }
+        let findFilter= await productModel.find(objectFilter)
+        if(findFilter.length==0)
+        return res.status(404).send({status:false,message:"No product Found"})
+        return res.status(200).send({status:true,message:"successful",data:findFilter})
       } catch (err) {
           res.status(500).send({ status: false, Message: err.Message })
       }
   
   }
+
 
 const getProductById=async(req,res)=>{
     try{
@@ -232,11 +247,11 @@ const updateProduct=async(req,res)=>{
                 if(checkSizes.includes(arrayOfSizes[i].trim()))continue;
                 else return res.status(400).send({status:false,message:"Sizes should in this ENUM only S/XS/M/X/L/XXL/XL"})}
                 let updateSize= await productModel.findOne({_id:productId}).select({_id:0,availableSizes:1})
-    let arraySize=updateSize.availableSizes
-    for(let i=0;i<arrayOfSizes.length;i++){
-        if(arraySize.includes(arrayOfSizes[i].trim()))
-        continue;
-        
+        let arraySize=updateSize.availableSizes
+        for(let i=0;i<arrayOfSizes.length;i++){
+            if(arraySize.includes(arrayOfSizes[i].trim()))
+            continue;
+            
         arraySize.push(arrayOfSizes[i].trim())
 
     }

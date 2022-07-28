@@ -24,6 +24,8 @@ router.delete("/products/:productId",productController.deleteById)
 
 
 
-
+router.all("/*",(req,res)=>{
+    return res.status(404).send({status:false,message:"Api not found"})
+})
 
 module.exports=router
