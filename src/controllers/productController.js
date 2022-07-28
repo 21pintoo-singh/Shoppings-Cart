@@ -74,9 +74,8 @@ const createProduct=async (req,res)=>{
     return res.status(201).send({status:true,message:"Document is created successfully",data:productCreate})
 }catch(err){
     return res.status(500).send({status:false,message:err.message})
-}}
-
-
+}
+}
 
 
 const getProduct = async function (req, res) {
@@ -99,7 +98,7 @@ const getProduct = async function (req, res) {
   
               if (!validator.isValid(title)) { obj.title = { $regex: title, $options: "i" } }
   
-              if (!validator.isValid(priceGreaterThan) && !vfy.isEmptyVar(priceLessThan)) {
+              if (!validator.isValid(priceGreaterThan) && !validator.isValid(priceLessThan)) {
                   obj.price = { $gte: priceGreaterThan, $lte: priceLessThan }
               } else if (!validator.isValid(priceGreaterThan)) {
                   obj.price = { $gte: priceGreaterThan }
@@ -141,7 +140,7 @@ const updateProduct=async(req,res)=>{
     try{
         let productId=req.params.productId
         if(!mongoose.isValidObjectId(productId))return res.status(400).send({ status: false, message: `${productId} is not a valid userId` })
-        const product=await productModel.findOne({_id:productId})
+        const product=await productModel.findOne({_id:productId ,isDeleted:false})
         if(!product)return res.status(404).send({status:false,message:"productId Not found"})
         let temp=req.body
         let {title,description,price,currencyId,currencyFormat,isFreeShipping,productImage,style,availableSizes,installments}=temp
@@ -205,6 +204,7 @@ const updateProduct=async(req,res)=>{
             for(let i=0;i<arrayOfSizes.length;i++){
                 if(checkSizes.includes(arrayOfSizes[i]))continue;
                 else return res.status(400).send({status:false,message:"Sizes should in this ENUM only S/XS/M/X/L/XXL/XL"})}
+
             data.availableSizes=arrayOfSizes
         }
         if(installments||installments===""){
@@ -213,9 +213,8 @@ const updateProduct=async(req,res)=>{
             if(installmentRegex.test(installments)==false)return res.status(400).send({status:false,message:"Installment  you entered is invalid"})
             data.installments=installments
         }
-
 //----------------------------------------------------------------------------------------
-        const updateData=await productModel.findOneAndUpdate({_id:productId},{$set:data ,updatedAt:Date.now()},{new:true})
+        const updateData=await productModel.findOneAndUpdate({_id:productId},{$set:data ,updatedAt:new Date()},{new:true})
         return res.status(200).send({ status: true, message: "updated successfully", data: updateData })
     }catch(error){
         return res.status(500).send({ status: false, message: error.message })
