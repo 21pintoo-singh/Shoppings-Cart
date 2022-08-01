@@ -50,7 +50,8 @@ const createUser=async (req,res)=>{
         //address
         if (!validator.isValid(address))
         return res.status(400).json({ status: false, msg: "Address is required" });
-        if(typeof address!="object")return res.status(400).json({ status: false, msg: "Please provide Address is Object" });
+        // address=JSON.parse(address) 
+        if(typeof address!="object")return res.status(400).json({ status: false, msg: "Please provide Address in Object" });
 
         if (address) {
             if (address.shipping) {
@@ -132,7 +133,7 @@ const loginUser=async function(req,res){
             iat: iat,
             exp: exp
          },
-         "project/booksManagementGroup7"
+         "project/booksManagementGroup51"
       ); 
     
    //   res.status(200).setHeader("x-api-key", token);

@@ -2,7 +2,7 @@ const productModel=require("../models/productModel")
 const mongoose=require("mongoose")
 const validator=require("../utility/validation")
 const aws=require("../utility/awsconfig")
-const { find } = require("../models/productModel")
+
 
 var nameRegex=/^[a-zA-Z\s]*$/
 var priceRegex=/^[1-9]\d*(\.\d+)?$/
@@ -65,17 +65,13 @@ const createProduct=async (req,res)=>{
     let arrayOfSizes=availableSizes.trim().split(",")
 
     for(let i=0;i<arrayOfSizes.length;i++){
-        if(checkSizes.includes(arrayOfSizes[i].trim()))
-        continue;
-        else
-        return res.status(400).send({status:false,message:"Sizes should in this ENUM only S/XS/M/X/L/XXL/XL"})
+        if(checkSizes.includes(arrayOfSizes[i].trim()))continue;
+        else return res.status(400).send({status:false,message:"Sizes should in this ENUM only S/XS/M/X/L/XXL/XL"})
     }
     let newSize=[]
     for(let j=0;j<arrayOfSizes.length;j++){
-        if(newSize.includes(arrayOfSizes[j].trim()))
-        continue;
-        else
-        newSize.push(arrayOfSizes[j].trim())
+        if(newSize.includes(arrayOfSizes[j].trim()))continue;
+        else newSize.push(arrayOfSizes[j].trim())
     }
 
     objectCreate.availableSizes=newSize
@@ -97,8 +93,8 @@ const getProduct = async function (req, res) {
       try {
         let queryData=req.query
         if(Object.keys(queryData).length==0){
-            let filterData= await productModel.find({isDeleted:false})
-            return res.status(200).send({status:true,message:"Successful",data:filterData})
+        let filterData= await productModel.find({isDeleted:false})
+        return res.status(200).send({status:true,message:`Found ${filterData.length} Items`,data:filterData})
         }
         let objectFilter={isDeleted:false}
         let size=queryData.size
@@ -118,6 +114,7 @@ const getProduct = async function (req, res) {
         if(name){
             if(!validator.isValid(name))
             return res.status(400).send({status:false,message:"Name should not be empty"})
+            name=name.trim()
             if(nameRegex.test(name)==false)
             return res.status(400).send({status:false,message:"You entered invalid Name"})
             objectFilter.title={}
@@ -150,13 +147,13 @@ const getProduct = async function (req, res) {
                 else{
                 objectFilter.price={}
                 objectFilter.price.$lt=Number(priceLessThan)
-                console.log(typeof (objectFilter.price.$lt))
+                // console.log(typeof (objectFilter.price.$lt))
                }
         }
         let findFilter= await productModel.find(objectFilter)
         if(findFilter.length==0)
         return res.status(404).send({status:false,message:"No product Found"})
-        return res.status(200).send({status:true,message:"successful",data:findFilter})
+        return res.status(200).send({status:true,message:`${findFilter.length} Matched Found`,data:findFilter})
       } catch (err) {
           res.status(500).send({ status: false, Message: err.Message })
       }
@@ -182,9 +179,9 @@ const updateProduct=async(req,res)=>{
         if(!mongoose.isValidObjectId(productId))return res.status(400).send({ status: false, message: `${productId} is not a valid userId` })
         const product=await productModel.findOne({_id:productId ,isDeleted:false})
         if(!product)return res.status(404).send({status:false,message:"productId Not found"})
-        if(product.isDeleted==true)
-        return res.status(400).send({status:false,message:"product is deleted"})
+        if(product.isDeleted==true)return res.status(400).send({status:false,message:"product is deleted"})
         let temp=req.body
+        if(!validator.isValidBody(temp))return res.status(400).send({status:false,message:"Please provide something to update"})
         let {title,description,price,currencyId,currencyFormat,isFreeShipping,productImage,style,availableSizes,installments}=temp
         let data={}
 //--------------------------------VALIDATION---------------------------------------//
@@ -210,6 +207,7 @@ const updateProduct=async(req,res)=>{
             if(priceRegex.test(price)==false)return res.status(400).send({status : false, message :"you entered a invalid price"})
             data.price=price
         }
+
         if(currencyId||currencyId===""){
             currencyId=currencyId.trim()
             if(!validator.isValid(currencyId))return res.status(400).send({status:false, message:"currencyId is empty"})

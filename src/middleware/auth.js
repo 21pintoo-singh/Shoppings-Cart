@@ -6,11 +6,12 @@ const mongoose=require('mongoose')
 const authentication = (req, res, next) => {
     try{
         let token = req.headers.authorization
-        if(validator.isValid(token)) return res.status(400).send({ status: false, Message: "⚠️ The token must be required in 'Bearer'" })
+        if(validator.isValid(token) || typeof token=="undefined") return res.status(400).send({ status: false, Message: "⚠️Please Enter token" })
         // console.log(token)
         // split and get the token only 🤯🤯
-        token = token.split(' ')[1] // get the 1 index value
-        jwt.verify(token,'secret',function(err,decode){
+        const bearer  = token.split(' ') // get the 1 index value
+        const bearerToken = bearer[1]
+        jwt.verify(bearerToken,'project/booksManagementGroup51',function(err,decode){
             if(err){ 
                 return res.status(401).send({ status: false, Message: err.message })
             }else{
