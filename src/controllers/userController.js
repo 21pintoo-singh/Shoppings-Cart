@@ -44,8 +44,7 @@ const createUser=async (req,res)=>{
 
         //password
         if (!validator.isValid(password)) return res.status(400).send({ status: false, message: `Password is required` })
-        if (!(password.trim().length > 7 && password.length < 16)) return res.status(400).send({ status: false, message: "password should  between 8 and 15 characters" })
-        if(!validator.isValidPassword(password))return res.status(400).send({ status: false, message: `Password must contain a Capital,Symbol,Numeric` }) 
+        if(!validator.isValidPassword(password))return res.status(400).send({ status: false, message: `Password must between 8-5 and contain a Capital,Symbol,Numeric` }) 
        
         //address
         if (!validator.isValid(address))
@@ -158,126 +157,89 @@ const getUserById=async (req,res)=>{
 
 
 let updateUser = async  (req, res)=> {
-    let userId = req.params.userId
-    console.log("functionup")
+    try{
+        let userId = req.params.userId
+        if (!mongoose.isValidObjectId(userId))return res.status(400).send({ status: false, message: "You entered a Invalid userId in params" })
+        const checkUserId=await userModel.findOne({_id:userId})
+        if(!checkUserId)return res.status(404).send({ status: false, message: "user not found" })
+        // if (userId != req.userId)
+        //     return res.status(400).send({ status: false, message: "Authorisation Failed--> you are not allowed to modify another acoount" })
+        let data = req.body
+        let files=req.files;
+        if(!validator.isValidBody(data))return res.status(400).send({ status: false, message: "Please provide something to update" })
+        if (data.fname || data.fname==="") {
+            data.fname=data.fname.trim()
+            if (!validator.isValid(data.fname))return res.status(400).send({ status: false, message: "fname is empty" })
+        }
+        if (data.lname || data.lname==="") {
+            data.lname=data.lname.trim()
+            if (!validator.isValid(data.lname))return res.status(400).send({ status: false, message: "lname is empty" })
+        }
+        if (data.email || data.email==="") {
+            data.email=data.email.trim()
+            if (!validator.isValid(data.email))return res.status(400).send({ status: false, message: "email is empty" })
+            let findEmail = await userModel.findOne({ email: data.email })
+            if (findEmail)return res.status(400).send({ status: false, message: "email is already exists please enter a new emailId " })
+            if (validator.isValidEmail(data.email) == false) return res.status(400).send({ status: false, message: "You entered a Invalid email" })
+        }
+        
+        if(!files || (files && files.length ===0))return res.status(400).send({status: false, message: 'Profile image is empty'})
+        const profilePicture = await aws.uploadFile(files[0])
+        data.profileImage = profilePicture
+        
+        if (data.phone || data.phone==="") {
+            data.phone=data.phone.trim()
+            if (!validator.isValid(data.phone))return res.status(400).send({ status: false, message: "phone is empty" })
+            let findPhone = await userModel.findOne({ phone: data.phone })
+            if (phoneRex.test(data.phone) == false) return res.status(400).send({ status: false, message: "You entered a Invalid phone number" })
+            if (findPhone) return res.status(400).send({ status: false, message: "This phone number is already exists" })
+        }
+        if(data.password || data.password===""){
+            data.password=data.password.trim()
+            if(!validator.isValid(data.password))return res.status(400).send({ status: false, message: "password is empty" })
+            if(!validator.isValidPassword(data.password))return res.status(400).send({ status: false, message: `Password must between 8-5 and contain a Capital,Symbol,Numeric` }) 
+            const salt =await bcrypt.genSalt(10)
+            const hashedPassword = await bcrypt.hash(data.password, salt)
+            data.password=hashedPassword
+        }
+        let {shipping,billing}=data.address
+        if(shipping){
+            if(shipping.street || shipping.street===""){
+                shipping.street=shipping.street.trim()
+                if(!validator.isValid(shipping.street))return res.status(400).send({ status: false, message: "shipping street is empty" })
+            }
+            if(shipping.city || shipping.city===""){
+                shipping.city=shipping.city.trim()
+                if(!validator.isValid(shipping.city))return res.status(400).send({ status: false, message: "shipping city is empty" })
+            }
+            if(shipping.pincode || shipping.pincode===""){
+                shipping.pincode=shipping.pincode.trim()
+                if(!validator.isValid(shipping.pincode))return res.status(400).send({ status: false, message: "shipping pincode is empty" })
+                if (!/^[1-9][0-9]{5}$/.test(shipping.pincode))return res.status(400).send({status: false,message: "Shipping Pincode should in six digit Number"})
+            }
+        }
+        if(billing){
+            if(billing.street || billing.street===""){
+                billing.street=billing.street.trim()
+                if(!validator.isValid(billing.street))return res.status(400).send({ status: false, message: "billing street is empty" })
+            }
+            if(billing.city || billing.city===""){
+                billing.city=billing.city.trim()
+                if(!validator.isValid(billing.city))return res.status(400).send({ status: false, message: "billing city is empty" })
+            }
+            if(billing.pincode || billing.pincode===""){
+                billing.pincode=billing.pincode.trim()
+                if(!validator.isValid(billing.pincode))return res.status(400).send({ status: false, message: "billing pincode is empty" })
+                if (!/^[1-9][0-9]{5}$/.test(billing.pincode))return res.status(400).send({status: false,message: "billing Pincode should in six digit Number"})
+            }
+        }
+        let updateData = await userModel.findOneAndUpdate({ _id: userId }, { $set: data, updatedAt: Date.now() }, { new: true })
 
-    if (!mongoose.isValidObjectId(userId))return res.status(400).send({ status: false, message: "You entered a Invalid userId in params" })
-    const checkUserId=await userModel.findOne({_id:userId})
-    if(!checkUserId)return res.status(404).send({ status: false, message: "user not found" })
-    // if (userId != req.userId)
-    //     return res.status(400).send({ status: false, message: "Authorisation Failed--> you are not allowed to modify another acoount" })
-
-    let data = req.body
-
-    // let email=data.email
-    if (data.fname || data.fname==="") {
-        data.fname=data.fname.trim()
-        if (!validator.isValid(data.fname))
-            return res.status(400).send({ status: false, message: "fname should not be empty" })}
-
-    if (data.lname || data.lname==="") {
-        data.lname=data.lname.trim()
-        if (!validator.isValid(data.lname))
-            return res.status(400).send({ status: false, message: "lname should not be empty" })}
+        return res.status(200).send({ status: true, message: "Data is updated successfully", data: updateData })
     
-    if (data.email || data.email==="") {
-        data.email=data.email.trim()
-        let findEmail = await userModel.findOne({ email: data.email })
-        if (findEmail) {
-            if (findEmail._id != userId)return res.status(400).send({ status: false, message: "email is already exists please enter a new emailId " })
-        }
-        if (validator.isValidEmail(data.email) == false) return res.status(400).send({ status: false, message: "You entered a Invalid email" })
-
+    }catch(error){
+        return res.status(500).send({status:false,message:error.message})
     }
-
-    if (data.phone || data.phone==="") {
-        let findPhone = await userModel.findOne({ phone: data.phone })
-
-        if (findPhone) {
-
-            if (findPhone._id != userId)
-                return res.status(400).send({ status: false, message: "This phone number is already exists" })
-        }
-        if (phoneRex.test(data.phone) == false) return res.status(400).send({ status: false, message: "You entered a Invalid phone number" })
-
-    }
-
-    // if (data.address) {
-    //     if (typeof data.address != 'object')
-    //         return res.status(400).send({ status: false, message: "Address should be Object type" })
-
-    //     if (data.address.shipping) {
-    //         if (typeof data.address.shipping != 'object')
-    //             return res.status(400).send({ status: false, message: "Shipping should be Object type" })
-
-    //         if (data.address.shipping === {})
-    //             return res.status(400).send({ status: false, message: "Shipping cannot be empty Object" })
-
-    //             if(data.address.shipping.street=="" || data.address.shipping.city=="" || data.address.shipping.pincode=="")
-    //             return res.status(400).send({status:false, message:"Field cannot be empty"})
-
-    //             if(data.address.shipping.pincode){
-    //                 if(regexPincode.test(data.address.shipping.pincode))
-    //                 return res.status(400).send({status:false,message:"You entered a invalid Pincode in Shipping address."})
-    //             }
-    //     }
-
-    //     if (data.address.billing) {
-    //         if (typeof data.address.billing != 'object')
-    //             return res.status(400).send({ status: false, message: "billing should be Object type" })
-
-    //         if (typeof data.address.billing === {})
-    //             return res.status(400).send({ status: false, message: "billing cannot be empty Object" })
-
-    //             if(data.address.billing.pincode){
-    //                 if(regexPincode.test(data.address.billing.pincode))
-    //                 return res.status(400).send({status:false,message:"You entered a invalid Pincode in Billing address."})
-    //             }
-    //     }
-
-    //     }
-    let profileUrl;
-
-    if (data.profileImage || data.profileImage==="") {
-
-        let uploadImage = await uploadFile(data.profileImage)
-
-         profileUrl= uploadImage
-
-        // if (regexImageUrl.test(data.profileImage) == false)
-        //     return res.status(400).send({ status: false, message: "You entered a wrong image Url" })
-
-    }
-
-    let hashPassword;
-    let checkPassword=data.password
-    if (checkPassword) {
-        // if (!validator.isValid(checkPassword)){
-        //     return res.status(400).send({ status: false, message: "password cannot be empty" });
-        // }
-
-        if (!(checkPassword>= 8 && checkPassword<= 15)) {
-            return res.status(400).send({ status: false, message: "Password length should be in the range of 8 to 15 .........." })
-        }
-
-    
-        const salt = await bcrypt.genSalt(10)
-        const hashedPassword = await bcrypt.hash(password, salt)
-
-        hashPassword = hashedPassword
-        console.log(hashedPassword)
-    }
-
-
-
-    let updateData = await userModel.findOneAndUpdate({ _id: userId }, { $set: data, updatedAt: Date.now() }, { new: true })
-
-    if (!updateData) {
-        return res.status(404).send({ status: false, message: "No user Found" })
-    }
-
-    return res.status(200).send({ status: true, message: "Data is updated successfully", data: updateData })
-
 }
 
 module.exports={createUser,getUserById,loginUser,updateUser}
