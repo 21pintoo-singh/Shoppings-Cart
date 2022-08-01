@@ -1,14 +1,12 @@
 const userModel=require('../models/userModel.js')
 const productModel=require('../models/productModel.js')
 const cartModel=require('../models/cartModel.js')
-
 const mongoose=require('mongoose')
-
 const validator=require('../utility/validation.js')
 
 var quantityRegex=/^\d*[1-9]\d*$/
 
-let createCart = async (req,res)=>{
+const createCart = async (req,res)=>{
    
     try {
 
@@ -95,8 +93,16 @@ let createCart = async (req,res)=>{
     }
 }catch(err){
     return res.status(500).send({status:false,message:err.message})
-}}
+}
+}
 
+const updateCart=async(req,res)=>{
+    try{
+
+    }catch(err){
+        return res.status(500).send({status:false,message:err.message})
+    }
+}
 
 const getById=async(req,res)=>{
     try{
@@ -124,4 +130,4 @@ const deleteById=async(req,res)=>{
     }
 }
 
-module.exports={createCart,getById,deleteById}
+module.exports={createCart,getById,deleteById,updateCart}
