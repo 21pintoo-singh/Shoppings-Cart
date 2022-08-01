@@ -14,19 +14,16 @@ router.put("/user/:userId/profile",userController.updateUser)
 
 /*------------------------------PRODUCT API's---------------------------------------*/
 router.post("/products",productController.createProduct)
-
 router.get('/products', productController.getProduct)
-
 router.get("/products/:productId",productController.getProductById)
-
 router.put("/products/:productId",productController.updateProduct)
-
 router.delete("/products/:productId",productController.deleteById)
 
 //----------------------------CART API's-----------------------------------------------
 
 router.post("/createCart/:userId",cartController.createCart)
 router.get("/users/:userId/cart",cartController.getById)
+router.delete("/users/:userId/cart",cartController.deleteById)
 
 
 router.all("/*",(req,res)=>{

@@ -21,7 +21,7 @@ let createCart = async (req,res)=>{
     let data=req.body
     let objectCreate={}
     let cartId=data.cartId
-
+    objectCreate.userId=userId
     // if(!mongoose.isValidObjectId(cartId))
     // return res.status(400).send({status:false,message:"You entered an invalid cartId"})
 
@@ -101,15 +101,27 @@ let createCart = async (req,res)=>{
 const getById=async(req,res)=>{
     try{
         let userId=req.params.userId
-        if(!mongoose.isValidObjectId)return res.status(400).send({status:false,message:"You entered an invalid userId"})
-        let checkUserId=await cartModel.findOne(userId)
-        if(!checkUserId)return res.status(400).send({status:false,message:"UserId not found"})
-
-
-        
+        if(!mongoose.isValidObjectId(userId))return res.status(400).send({status:false,message:"You entered an invalid userId"})
+        let checkCart=await cartModel.findOne({userId})
+        if(!checkCart)return res.status(404).send({status:false,message:"Cart not exist for this userId"})
+        return res.status(200).send({status: true,message: "Success",data: checkCart})  
     }catch(err){
         return res.status(500).send({status:false,message:err.message})
     }
 }
 
-module.exports={createCart,getById}
+const deleteById=async(req,res)=>{
+    try{
+        let userId=req.params.userId
+        if(!mongoose.isValidObjectId(userId))return res.status(400).send({status:false,message:"You entered an invalid userId"})
+        let checkCart=await cartModel.findOne({userId})
+        if(!checkCart)return res.status(404).send({status:false,message:"Cart not exist for this userId"})
+        let deleteCart=await cartModel.findOneAndUpdate({userId},{items:[] ,totalItems:0 , totalPrice:0},{new:true})
+        return res.status(200).send({status: true,message: "Success",data: deleteCart}) 
+
+    }catch(err){
+        return res.status(500).send({status:false,message:err.message})
+    }
+}
+
+module.exports={createCart,getById,deleteById}
