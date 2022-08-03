@@ -5,6 +5,7 @@ const userController=require("../controllers/userController")
 const productController=require("../controllers/productController")
 const verify=require("../middleware/auth")
 const cartController=require("../controllers/cartController")
+const orderController=require("../controllers/orderController")
 
 /*----------------------------USER API's-------------------------------------- */
 router.post("/register",userController.createUser)
@@ -26,6 +27,10 @@ router.put("/users/:userId/cart",cartController.updateCart)
 router.get("/users/:userId/cart",cartController.getById)
 router.delete("/users/:userId/cart",cartController.deleteById)
 
+//------------------------------ORDER API's---------------------------------------------
+
+router.post("/users/:userId/orders",orderController.createOrder)
+router.put("/users/:userId/orders",orderController.updateOrder)
 
 router.all("/*",(req,res)=>{
     return res.status(404).send({status:false,message:"Api not found"})

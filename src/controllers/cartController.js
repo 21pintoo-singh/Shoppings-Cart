@@ -45,9 +45,9 @@ let createCart = async (req, res) => {
 
             let totalPrice = (data.quantity) * (findProduct.price)
             objectCreate.totalPrice = totalPrice
-
             let totalItems = objectCreate.items.length
             objectCreate.toalItems = totalItems
+            
             let createNewCart = await cartModel.create(objectCreate)
             let addData= await cartModel.findOne({userId:userId}).select({items:{_id:0}}).populate([{path :"items.productId"}])
             return res.status(201).send({ status: false, message: "Cart is successfully created", data: addData })
@@ -94,7 +94,6 @@ let createCart = async (req, res) => {
     }
 
 }
-
 
 const updateCart=async(req,res)=>{
     try{
