@@ -15,7 +15,7 @@ const createOrder=async(req,res)=>{
         let objectCreate={}
         if(!validator.isValid(data.cartId))return res.status(400).send({ status: false, message: "cartId is required" })
         if(!mongoose.isValidObjectId(data.cartId))return res.status(400).send({ status: false, message: "CartId is invalid" })
-        let findCart=await cartModel.findOne({_id:data.cartId})
+        let findCart=await cartModel.findOne({_id:data.cartId,userId:userId})
         if(!findCart)return res.status(404).send({ status: false, message: "Please create Cart first" })
         if(data.cancellable || data.cancellable===""){
             data.cancellable=data.cancellable.trim()
