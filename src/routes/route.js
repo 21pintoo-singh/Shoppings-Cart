@@ -22,15 +22,15 @@ router.delete("/products/:productId",productController.deleteById)
 
 //----------------------------CART API's-----------------------------------------------
 
-router.post("/createCart/:userId",cartController.createCart)
-router.put("/users/:userId/cart",cartController.updateCart)
-router.get("/users/:userId/cart",cartController.getById)
-router.delete("/users/:userId/cart",cartController.deleteById)
+router.post("/createCart/:userId",verify.authentication,verify.authorization_user,cartController.createCart)
+router.put("/users/:userId/cart",verify.authentication,verify.authorization_user,cartController.updateCart)
+router.get("/users/:userId/cart",verify.authentication,verify.authorization_user,cartController.getById)
+router.delete("/users/:userId/cart",verify.authentication,verify.authorization_user,cartController.deleteById)
 
 //------------------------------ORDER API's---------------------------------------------
 
-router.post("/users/:userId/orders",orderController.createOrder)
-router.put("/users/:userId/orders",orderController.updateOrder)
+router.post("/users/:userId/orders",verify.authentication,verify.authorization_user,orderController.createOrder)
+router.put("/users/:userId/orders",verify.authentication,verify.authorization_user,orderController.updateOrder)
 
 router.all("/*",(req,res)=>{
     return res.status(404).send({status:false,message:"Api not found"})

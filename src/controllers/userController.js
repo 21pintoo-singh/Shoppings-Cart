@@ -125,7 +125,7 @@ const loginUser=async function(req,res){
     }
 
     let iat = Date.now()
-    let exp = (iat) + (24 * 60 * 60 * 1000)
+    let exp = (iat) + (60*60 * 1000)
     let token = jwt.sign(
          {
             userId: user._id.toString(),
