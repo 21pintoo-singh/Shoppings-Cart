@@ -9,8 +9,11 @@ const createOrder = async (req, res) => {
     try {
         let userId = req.params.userId
         if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ status: false, message: "userId is invalid" })
-        let findUser = await userModel.findOne({ userId })
+        let findUser = await userModel.findOne({ _id:userId })
         if (!findUser) return res.status(404).send({ status: false, message: "userId is not found" })
+        //authorisation
+        if (userId != req.tokenData.userId) return res.status(401).send({ status: false, Message: "Unauthorized user!" })
+
         let data = req.body;
         let objectCreate = {}
         if (!validator.isValid(data.cartId)) return res.status(400).send({ status: false, message: "cartId is required" })
@@ -53,12 +56,12 @@ const createOrder = async (req, res) => {
 const updateOrder = async (req, res) => {
     try {
         let userId = req.params.userId
-        if (!mongoose.isValidObjectId(userId))
-            return res.status(400).send({ status: false, message: "You entered an invalid userId" })
-
-        let findUser = await userModel.findById(userId)
-        if (!findUser)
-            return res.status(404).send({ status: false, message: "No such User found" })
+        if (!mongoose.isValidObjectId(userId))return res.status(400).send({ status: false, message: "You entered an invalid userId" })
+        
+        let findUser = await userModel.findById({_id:userId})
+        if (!findUser)return res.status(404).send({ status: false, message: "No such User found" })
+        //authorization
+        if (userId != req.tokenData.userId) return res.status(401).send({ status: false, Message: "Unauthorized user!" })
 
         let findCart = await cartModel.findOne({ userId: userId })
         if (!findCart)
@@ -76,10 +79,7 @@ const updateOrder = async (req, res) => {
         if (!findOrder)
             return res.status(404).send({ status: false, message: "No such Order found" })
 
-        if (findOrder.userId != userId)
-            return res.status(400).send({ status: false, message: "This order doesnot belong to this user......" })
-
-        let orderStatus = req.body.orderStatus
+        let orderStatus = req.body.status
         if (!orderStatus) {
             return res.status(200).send({ status: true, data: findOrder })
         }

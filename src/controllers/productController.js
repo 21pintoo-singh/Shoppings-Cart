@@ -11,56 +11,55 @@ var installmentRegex = /\d/
 const createProduct = async (req, res) => {
     try {
         let data = req.body
-        let { title, description, price, currencyId, currencyFormat, style, availableSizes, installments } = data
-
+        let { title, description, price, currencyId, currencyFormat, style, availableSizes, installments,isFreeShipping } = data
+        
         let objectCreate = {}
-        //-----------------------------------------VALIDATION--------------------------------------------------//
+//-------------------------------VALIDATION------------------------------------------//
         if (!validator.isValidBody(data)) return res.status(400).send({ status: false, message: "Please enter some details in the request body" })
-
+        //title
         if (!title) return res.status(400).send({ status: false, message: "title field is Required" })
         let findtitle = await productModel.findOne({ title: title })
         if (findtitle) return res.status(400).send({ status: false, message: "This title is already exists" })
         if (nameRegex.test(title) == false) return res.status(400).send({ status: false, message: "you entered a invalid Title" })
         objectCreate.title = title
 
+        //description
         if (!description) return res.status(400).send({ status: false, message: "description field is Required" })
         if (nameRegex.test(description) == false) return res.status(400).send({ status: false, message: "you entered a invalid description" })
         objectCreate.description = description
 
+        //price
         if (!price) return res.status(400).send({ status: false, message: "Price field is Required" })
         if (priceRegex.test(price) == false) return res.status(400).send({ status: false, message: "you entered a invalid price" })
         objectCreate.price = price
 
-        if (!currencyId)
-            return res.status(400).send({ status: false, message: "currencyId field is Required" })
+        //currencyId
+        if (!currencyId)return res.status(400).send({ status: false, message: "currencyId field is Required" })
         let checkCurrencyId = "INR"
-        if (currencyId != checkCurrencyId)
-            return res.status(400).send({ status: false, message: "you entered a invalid currencyId---> currencyId should be INR" })
+        if (currencyId != checkCurrencyId)return res.status(400).send({ status: false, message: "you entered a invalid currencyId---> currencyId should be INR" })
         objectCreate.currencyId = currencyId
 
-        if (!currencyFormat)
-            return res.status(400).send({ status: false, message: "currencyFormat field is Required" })
+        //currency Format
+        if (!currencyFormat)return res.status(400).send({ status: false, message: "currencyFormat field is Required" })
         let checkCurrencyFormat = "₹"
-        if (currencyFormat != checkCurrencyFormat)
-            return res.status(400).send({ status: false, message: "you entered a invalid currencyFormat--> currencyFormat should be ₹" })
+        if (currencyFormat != checkCurrencyFormat)return res.status(400).send({ status: false, message: "you entered a invalid currencyFormat--> currencyFormat should be ₹" })
         objectCreate.currencyFormat = currencyFormat
 
+        //image
         let image = req.files
-        if (!image || image.length == 0)
-            return res.status(400).send({ status: false, message: "Profile Image field is Required" })
+        if (!image || image.length == 0)return res.status(400).send({ status: false, message: "Profile Image field is Required" })
         let productImage = await aws.uploadFile(image[0])
         objectCreate.productImage = productImage
 
+        //style (if it is present)
         if (style) {
             if (nameRegex.test(style) == false) return res.status(400).send({ status: false, message: "STyle to enterd is invalid" })
             objectCreate.style = style
         }
 
-
+        //avalableSizes
         let checkSizes = ["S", "XS", "M", "X", "L", "XXL", "XL"]
-
-        if (!availableSizes)
-            return res.status(400).send({ status: false, message: "Available Sizes field is Required" })
+        if (!availableSizes)return res.status(400).send({ status: false, message: "Available Sizes field is Required" })
 
         let arrayOfSizes = availableSizes.trim().split(",")
 
@@ -76,11 +75,12 @@ const createProduct = async (req, res) => {
 
         objectCreate.availableSizes = newSize
 
+        //installment (if given)
         if (installments) {
             if (installmentRegex.test(installments) == false) return res.status(400).send({ status: false, message: "Installment  you entered is invalid" })
             objectCreate.installments = installments
         }
-        //--------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------
         let productCreate = await productModel.create(objectCreate)
         return res.status(201).send({ status: true, message: "Document is created successfully", data: productCreate })
     } catch (err) {
@@ -92,10 +92,12 @@ const createProduct = async (req, res) => {
 const getProduct = async function (req, res) {
     try {
         let queryData = req.query
+        //if no query then filter with isDeleted:false
         if (Object.keys(queryData).length == 0) {
             let filterData = await productModel.find({ isDeleted: false })
             return res.status(200).send({ status: true, message: `Found ${filterData.length} Items`, data: filterData })
         }
+        //else filtered with new object containing isDeleted:false && queryData
         let objectFilter = { isDeleted: false }
         let size = queryData.size
         if (size) {
@@ -112,55 +114,42 @@ const getProduct = async function (req, res) {
         }
         let name = queryData.name
         if (name) {
-            if (!validator.isValid(name))
-                return res.status(400).send({ status: false, message: "Name should not be empty" })
+            if (!validator.isValid(name))return res.status(400).send({ status: false, message: "Name should not be empty" })
             name = name.trim()
-            if (nameRegex.test(name) == false)
-                return res.status(400).send({ status: false, message: "You entered invalid Name" })
+            if (nameRegex.test(name) == false)return res.status(400).send({ status: false, message: "You entered invalid Name" })
             objectFilter.title = {}
             objectFilter.title.$regex = name
             objectFilter.title.$options = "i"
         }
         let priceArray = []
         let priceGreaterThan = queryData.priceGreaterThan
-        if (priceGreaterThan) {
-            if (!validator.isValid(priceGreaterThan))
-                return res.status(400).send({ status: false, message: "Name should not be empty" })
-            if (priceRegex.test(priceGreaterThan) == false)
-                return res.status(400).send({ status: false, message: "You entered invalid priceGreaterThan" })
+        if (priceGreaterThan || priceGreaterThan==="") {
+            if (!validator.isValid(priceGreaterThan))return res.status(400).send({ status: false, message: "priceGreaterThan is empty" })
+            if (priceRegex.test(priceGreaterThan) == false)return res.status(400).send({ status: false, message: "You entered invalid priceGreaterThan" })
             objectFilter.price = {}
             objectFilter.price.$gt = Number(priceGreaterThan)
         }
         let priceLessThan = queryData.priceLessThan
-        if (priceLessThan) {
-            if (!validator.isValid(priceLessThan))
-                return res.status(400).send({ status: false, message: "Name should not be empty" })
-
-            if (priceRegex.test(priceLessThan) == false)
-                return res.status(400).send({ status: false, message: "You entered invalid priceLessThan" })
+        if (priceLessThan || priceLessThan==="") {
+            if (!validator.isValid(priceLessThan))return res.status(400).send({ status: false, message: "priceLessThan is empty" })
+            if (priceRegex.test(priceLessThan) == false)return res.status(400).send({ status: false, message: "You entered invalid priceLessThan" })
 
             let objectKeys = Object.keys(objectFilter)
 
             if (objectKeys.includes("price")) {
                 objectFilter.price.$lt = Number(priceLessThan)
-            }
-            else {
+            }else {
                 objectFilter.price = {}
                 objectFilter.price.$lt = Number(priceLessThan)
-                console.log((objectFilter.price.$lt))
             }
         }
-        // console.log(objectFilter)
         let sortedBy=queryData.sortedBy
         if (sortedBy) {
-            if (!(sortedBy == "1" || sortedBy == "-1"))
-                return res.status(400).send({ status: false, message: "You entered an invalid input sorted By can take only two Inputs 1 OR -1" })
-
+            if (!(sortedBy == "1" || sortedBy == "-1"))return res.status(400).send({ status: false, message: "You entered an invalid input sorted By can take only two Inputs 1 OR -1" })
         }
-
         let findFilter = await productModel.find(objectFilter).sort({ price: sortedBy })
-        if (findFilter.length == 0)
-            return res.status(404).send({ status: false, message: "No product Found" })
+        if (findFilter.length == 0)return res.status(404).send({ status: false, message: "No product Found" })
+
         return res.status(200).send({ status: true, message: `${findFilter.length} Matched Found`, data: findFilter })
     } catch (err) {
         res.status(500).send({ status: false, Message: err.message })
@@ -172,9 +161,10 @@ const getProduct = async function (req, res) {
 const getProductById = async (req, res) => {
     try {
         let productId = req.params.productId
-        if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, message: `${productId} is not a valid productId` })
-        const product = await productModel.findOne({ _id: productId, isDeleted: false })
+        if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, message: `Invalid productId` })
+        const product = await productModel.findOne({ _id: productId })
         if (!product) return res.status(404).send({ status: false, message: "productId Not found" })
+        if(product.isDeleted==true)return res.status(404).send({ status: false, message: "this product is deleted" })
         return res.status(200).send({ status: true, message: 'product details', data: product })
     } catch (error) {
         return res.status(500).send({ status: false, message: error.message })
@@ -184,10 +174,10 @@ const getProductById = async (req, res) => {
 const updateProduct = async (req, res) => {
     try {
         let productId = req.params.productId
-        if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, message: `${productId} is not a valid userId` })
-        const product = await productModel.findOne({ _id: productId, isDeleted: false })
+        if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, message: `Invalid productId` })
+        const product = await productModel.findOne({ _id: productId })
         if (!product) return res.status(404).send({ status: false, message: "productId Not found" })
-        if (product.isDeleted == true) return res.status(400).send({ status: false, message: "product is deleted" })
+        if (product.isDeleted == true) return res.status(400).send({ status: false, message: "This Product is deleted" })
         let temp = req.body
         if (!validator.isValidBody(temp)) return res.status(400).send({ status: false, message: "Please provide something to update" })
         let { title, description, price, currencyId, currencyFormat, isFreeShipping, productImage, style, availableSizes, installments } = temp
@@ -282,9 +272,10 @@ const updateProduct = async (req, res) => {
 const deleteById = async (req, res) => {
     try {
         let productId = req.params.productId
-        if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, message: `${productId} is not a valid userId` })
-        const product = await productModel.findOne({ _id: productId, isDeleted: false })
+        if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, message: `Invalid ProductId` })
+        const product = await productModel.findOne({ _id: productId })
         if (!product) return res.status(404).send({ status: false, message: "productId Not found" })
+        if(product.isDeleted==true)return res.status(404).send({ status: false, message: `This product is not found` })
         const updateProduct = await productModel.findOneAndUpdate({ _id: productId }, { isDeleted: true, deletedAt: new Date() }, { new: true }).select({ __v: 0 })
         return res.status(200).send({ status: true, message: 'deleted successfully', data: updateProduct })
 

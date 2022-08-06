@@ -10,12 +10,13 @@ const phoneRex = /^[6789][0-9]{9}$/
 
 const createUser = async (req, res) => {
     try {
+        //fetching data present in request body 
         let files = req.files;
         const requestBody = req.body
-        // console.log(requestBody)
+        
         if (!validator.isValidBody(requestBody)) return res.status(400).send({ status: false, message: 'Please provide user details' })
-
-        let { fname, lname, phone, email, password, address } = requestBody// Object destructing
+        //Destructuring requestBody
+        let { fname, lname, phone, email, password, address  } = requestBody
         //------------------------------Validation starts-------------------------------
         //fname
         if (!validator.isValid(fname)) return res.status(400).send({ status: false, message: `fname is required` });
@@ -38,7 +39,9 @@ const createUser = async (req, res) => {
 
         //phone
         if (!validator.isValid(phone)) return res.status(400).send({ status: false, message: 'phone no is required' });
-        if (!phone.trim().match(phoneRex)) return res.status(400).send({ status: false, message: `Please fill a valid Indian phone number` })
+        phone=phone.trim()
+        if(phone.length!=10)return res.status(400).send({ status: false, message: `${phone.length} is not valid phone number length` })
+        if (!phone.match(phoneRex)) return res.status(400).send({ status: false, message: `Please fill Indian phone number` })
         const isPhoneAlreadyUsed = await userModel.findOne({ phone });
         if (isPhoneAlreadyUsed) return res.status(400).send({ status: false, message: `${phone} phone number is already registered` })
 
@@ -54,11 +57,11 @@ const createUser = async (req, res) => {
 
         if (address) {
             if (address.shipping) {
-                if (!validator.isValid(address.shipping.street)) return res.status(400).send({ status: false, Message: "Please provide your street name in shipping address" })
+                if (!validator.isValid(address.shipping.street)) return res.status(400).send({ status: false, Message: "Shipping Street is required" })
 
-                if (!validator.isValid(address.shipping.city)) return res.status(400).send({ status: false, Message: "Please provide your city name in shipping address" })
+                if (!validator.isValid(address.shipping.city)) return res.status(400).send({ status: false, Message: "Shipping city is required" })
 
-                if (!validator.isValid(address.shipping.pincode)) return res.status(400).send({ status: false, Message: "Please provide your pin code in shipping address" })
+                if (!validator.isValid(address.shipping.pincode)) return res.status(400).send({ status: false, Message: "Shipping pincode is required" })
 
                 if (!/^[1-9][0-9]{5}$/.test(address.shipping.pincode)) return res.status(400).send({ status: false, message: "Shipping Pincode should in six digit Number" })
             } else {
@@ -66,22 +69,24 @@ const createUser = async (req, res) => {
             }
 
             if (address.billing) {
-                if (!validator.isValid(address.billing.street)) return res.status(400).send({ status: false, Message: "Please provide your street name in billing address" })
+                if (!validator.isValid(address.billing.street)) return res.status(400).send({ status: false, Message: "Billing street is required" })
 
-                if (!validator.isValid(address.billing.city)) return res.status(400).send({ status: false, Message: "Please provide your city name in billing address" })
+                if (!validator.isValid(address.billing.city)) return res.status(400).send({ status: false, Message: "Billing city is required" })
 
-                if (!validator.isValid(address.billing.pincode)) return res.status(400).send({ status: false, Message: "Please provide your pin code in billing address" })
+                if (!validator.isValid(address.billing.pincode)) return res.status(400).send({ status: false, Message: "Billing pincode is required" })
 
-                if (!/^[1-9][0-9]{5}$/.test(address.billing.pincode)) return res.status(400).send({ status: false, message: "Billing Pincode should in six digit Number", })
+                if (!/^[1-9][0-9]{5}$/.test(address.billing.pincode)) return res.status(400).send({ status: false, message: "Billing pincode is invalid", })
             } else {
                 return res.status(400).send({ status: false, message: "please provide billing address" })
             }
         }
 
         // ---------------------------------Validation ends-------------------------------
+        //generating salt
         const salt = await bcrypt.genSalt(10)
+        //hashing
         const hashedPassword = await bcrypt.hash(password, salt)
-
+        //response structure
         const userData = {
             fname: fname,
             lname: lname,
@@ -116,23 +121,24 @@ const loginUser = async function (req, res) {
 
         let user = await userModel.findOne({ email: email });
         if (!user) {
-            return res.status(404).send({ status: false, message: "User Not found" });
+            return res.status(404).send({ status: false, message: "Email Not found" });
         }
-
+        //comparing hard-coded password to the hashed password
         const validPassword = await bcrypt.compare(password, user.password)
         if (!validPassword) {
             return res.status(400).send({ status: false, message: "wrong password" })
         }
 
         let iat = Date.now()
-        let exp = (iat) + (60 * 60 * 1000)
+        let exp = (iat) + (60 * 60 * 60 * 1000)
+        //token credentials
         let token = jwt.sign(
             {
                 userId: user._id.toString(),
                 iat: iat,
                 exp: exp
             },
-            "project/booksManagementGroup51"
+            "project/booksManagementGroup51"// => secret key
         );
 
         //   res.status(200).setHeader("x-api-key", token);
@@ -146,9 +152,11 @@ const loginUser = async function (req, res) {
 const getUserById = async (req, res) => {
     try {
         const userId = req.params.userId
-        if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ status: false, message: `${userId} is not a valid userId` })
+        if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ status: false, message: `Invalid userId in params` })
         const user = await userModel.findOne({ _id: userId })
         if (!user) return res.status(404).send({ status: false, message: "UserId Not found" })
+        //authorization
+        if (userId != req.tokenData.userId) return res.status(401).send({ status: false, Message: "Unauthorized user!" })
         return res.status(200).send({ status: true, message: 'User profile details', data: user })
     } catch (error) {
         return res.status(500).send({ status: false, message: error.message })
@@ -159,11 +167,11 @@ const getUserById = async (req, res) => {
 let updateUser = async (req, res) => {
     try {
         let userId = req.params.userId
-        if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ status: false, message: "You entered a Invalid userId in params" })
+        if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ status: false, message: "Invalid userId in params" })
         const checkUserId = await userModel.findOne({ _id: userId })
         if (!checkUserId) return res.status(404).send({ status: false, message: "user not found" })
-        // if (userId != req.userId)
-        //     return res.status(400).send({ status: false, message: "Authorisation Failed--> you are not allowed to modify another acoount" })
+        //authorization
+        if (userId != req.tokenData.userId)return res.status(400).send({ status: false, message: "Authorisation Failed--> you are not allowed to modify another acoount" })
         
         let data = req.body
         let files = req.files;
