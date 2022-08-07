@@ -11,8 +11,8 @@ var installmentRegex = /\d/
 const createProduct = async (req, res) => {
     try {
         let data = req.body
-        let { title, description, price, currencyId, currencyFormat, style, availableSizes, installments,isFreeShipping } = data
-        
+        let { title, description, price, currencyId, currencyFormat, style, availableSizes, installments,isFreeShipping , ...rest} = data
+        if(Object.keys(rest).length > 0)return res.status(400).send({ status: false, message: `${Object.keys(rest)} => Invalid Attribute` })
         let objectCreate = {}
 //-------------------------------VALIDATION------------------------------------------//
         if (!validator.isValidBody(data)) return res.status(400).send({ status: false, message: "Please enter some details in the request body" })
@@ -99,8 +99,12 @@ const getProduct = async function (req, res) {
         }
         //else filtered with new object containing isDeleted:false && queryData
         let objectFilter = { isDeleted: false }
-        let size = queryData.size
-        if (size) {
+
+        let {size,name,priceGreaterThan,priceLessThan,sortedBy,...rest}=queryData
+        if(Object.keys(rest).length > 0)return res.status(400).send({ status: false, message: `${Object.keys(rest)} => Invalid Attribute` })
+
+        if (size || size==="") {
+            if (!validator.isValid(size))return res.status(400).send({ status: false, message: "size is empty" })
             let checkSizes = ["S", "XS", "M", "X", "L", "XXL", "XL"]
             let arraySize = size.split(",")
             for (let i = 0; i < arraySize.length; i++) {
@@ -112,9 +116,9 @@ const getProduct = async function (req, res) {
             objectFilter.availableSizes = {}
             objectFilter.availableSizes.$in = arraySize
         }
-        let name = queryData.name
-        if (name) {
-            if (!validator.isValid(name))return res.status(400).send({ status: false, message: "Name should not be empty" })
+
+        if (name || name==="") {
+            if (!validator.isValid(name))return res.status(400).send({ status: false, message: "name is empty" })
             name = name.trim()
             if (nameRegex.test(name) == false)return res.status(400).send({ status: false, message: "You entered invalid Name" })
             objectFilter.title = {}
@@ -122,14 +126,12 @@ const getProduct = async function (req, res) {
             objectFilter.title.$options = "i"
         }
         let priceArray = []
-        let priceGreaterThan = queryData.priceGreaterThan
         if (priceGreaterThan || priceGreaterThan==="") {
             if (!validator.isValid(priceGreaterThan))return res.status(400).send({ status: false, message: "priceGreaterThan is empty" })
             if (priceRegex.test(priceGreaterThan) == false)return res.status(400).send({ status: false, message: "You entered invalid priceGreaterThan" })
             objectFilter.price = {}
             objectFilter.price.$gt = Number(priceGreaterThan)
         }
-        let priceLessThan = queryData.priceLessThan
         if (priceLessThan || priceLessThan==="") {
             if (!validator.isValid(priceLessThan))return res.status(400).send({ status: false, message: "priceLessThan is empty" })
             if (priceRegex.test(priceLessThan) == false)return res.status(400).send({ status: false, message: "You entered invalid priceLessThan" })
@@ -143,8 +145,8 @@ const getProduct = async function (req, res) {
                 objectFilter.price.$lt = Number(priceLessThan)
             }
         }
-        let sortedBy=queryData.sortedBy
-        if (sortedBy) {
+        if (sortedBy || sortedBy==="") {
+            if (!validator.isValid(sortedBy))return res.status(400).send({ status: false, message: "sortedBy is empty" })
             if (!(sortedBy == "1" || sortedBy == "-1"))return res.status(400).send({ status: false, message: "You entered an invalid input sorted By can take only two Inputs 1 OR -1" })
         }
         let findFilter = await productModel.find(objectFilter).sort({ price: sortedBy })

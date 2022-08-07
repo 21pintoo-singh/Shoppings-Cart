@@ -16,8 +16,9 @@ const createUser = async (req, res) => {
         
         if (!validator.isValidBody(requestBody)) return res.status(400).send({ status: false, message: 'Please provide user details' })
         //Destructuring requestBody
-        let { fname, lname, phone, email, password, address  } = requestBody
-        //------------------------------Validation starts-------------------------------
+        let { fname, lname, phone, email, password, address ,...rest } = requestBody
+        if(Object.keys(rest).length > 0)return res.status(400).send({ status: false, message: `${Object.keys(rest)} => Invalid Attribute` })
+//--------------------------------Validation starts-------------------------------
         //fname
         if (!validator.isValid(fname)) return res.status(400).send({ status: false, message: `fname is required` });
         if (!fname.trim().match(/^[a-zA-Z]{2,20}$/)) return res.status(400).send({ status: false, message: `Firstname should only contain alphabet` });
