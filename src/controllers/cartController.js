@@ -51,7 +51,7 @@ let createCart = async (req, res) => {
             
             let createNewCart = await cartModel.create(objectCreate)
             let addData= await cartModel.findOne({userId:userId}).select({items:{_id:0}}).populate([{path :"items.productId"}])
-            return res.status(201).send({ status: false, message: "Cart is successfully created", data: addData })
+            return res.status(201).send({ status: true, message: "Cart is successfully created", data: addData })
 
         }else {
             let productId = data.productId
