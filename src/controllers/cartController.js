@@ -114,7 +114,7 @@ const updateCart=async(req,res)=>{
         if (!mongoose.isValidObjectId(cartId))return res.status(400).send({ status: false, message: "cartId is invalid" })
         let findCart = await cartModel.findOne({ _id: cartId, userId: userId })
         if (!findCart)return res.status(404).send({ status: false, message: "No cart found" })
-
+        
         //product validation
         if (!productId)return res.status(400).send({ status: false, message: "productId is required" })
         if (!mongoose.isValidObjectId(productId))return res.status(400).send({ status: false, message: "productId is invalid" })

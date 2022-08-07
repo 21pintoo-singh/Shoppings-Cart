@@ -76,7 +76,8 @@ const createProduct = async (req, res) => {
         objectCreate.availableSizes = newSize
 
         //installment (if given)
-        if (installments) {
+        if (installments || installments==="") {
+            if(!validator.isValid(installments)) return res.status(400).send({ status: false, message: "Installment is empty" })
             if (installmentRegex.test(installments) == false) return res.status(400).send({ status: false, message: "Installment  you entered is invalid" })
             objectCreate.installments = installments
         }
@@ -182,7 +183,9 @@ const updateProduct = async (req, res) => {
         if (product.isDeleted == true) return res.status(400).send({ status: false, message: "This Product is deleted" })
         let temp = req.body
         if (!validator.isValidBody(temp)) return res.status(400).send({ status: false, message: "Please provide something to update" })
-        let { title, description, price, currencyId, currencyFormat, isFreeShipping, productImage, style, availableSizes, installments } = temp
+        let { title, description, price, currencyId, currencyFormat, isFreeShipping, productImage, style, availableSizes, installments ,...rest} = temp
+        if(Object.keys(rest).length > 0)return res.status(400).send({ status: false, message: `${Object.keys(rest)} => Invalid Attribute` })
+
         let data = {}
         //--------------------------------VALIDATION---------------------------------------//
         if (title || title === "") {
