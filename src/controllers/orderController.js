@@ -93,7 +93,7 @@ const updateOrder = async (req, res) => {
                 if (!checkCancellable)
                     return res.status(400).send({ status: false, message: "This order cannot be cancelled" })
 
-                checkCancellable.status = orderStatus
+                checkCancellable.status = status
 
                 let updateCart = await cartModel.findOneAndUpdate({ userId: userId }, { $set: { items: [], totalPrice: 0, totalItems: 0 } }, { new: true })
                 let updateOrder = await orderModel.findOneAndUpdate({ _id: orderId }, { $set: checkCancellable }, { new: true })
