@@ -81,7 +81,7 @@ const updateOrder = async (req, res) => {
 
         let status = req.body.status
         if (!status) {
-            return res.status(200).send({ status: false, message:"Please provide status to update.." })
+            return res.status(400).send({ status: false, message:"Please provide status to update.." })
         }
         else {
             let statusEnum = ["pending", "completed", "cancled"]
