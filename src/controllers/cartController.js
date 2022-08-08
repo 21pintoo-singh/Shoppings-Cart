@@ -88,7 +88,7 @@ let createCart = async (req, res) => {
             objectCreate.totalPrice = finalPrice
             objectCreate.totalItems = objectCreate.items.length
             let addNewCart = await cartModel.findOneAndUpdate({userId: userId }, { $set: objectCreate }, { new: true }).select({items:{_id:0}}).populate([{path:"items.productId"}])
-            return res.status(200).send({ status: false, message: "Cart is added successfully", data: addNewCart })
+            return res.status(200).send({ status: true, message: "Cart is added successfully", data: addNewCart })
         }
     }catch (err) {
         return res.status(500).send({ status: false, message: err.message })
@@ -122,7 +122,7 @@ const updateCart=async(req,res)=>{
         if (!findProduct)return res.status(404).send({ status: false, message: "No product found with respect to this productId" })
 
         //removeProduct validation
-        if (!removeProduct) {return res.status(200).send({ status: true, data: findCart })
+        if (!removeProduct) {return res.status(400).send({ status: false, message:"removeProduct is required" })
         }else {
             if (removeProduct == 0) {
                 for (let i = 0; i < findCart.items.length; i++) {
@@ -166,7 +166,7 @@ const updateCart=async(req,res)=>{
             }
         }
         let updateData = await cartModel.findOneAndUpdate({ _id: cartId, userId: userId }, { $set: findCart }, { new: true })
-        return res.status(200).send({ status: false, message: "success", data: updateData })
+        return res.status(200).send({ status: true, message: "success", data: updateData })
     }catch(err){
         return res.status(500).send({status:false,message:err.message})
     }

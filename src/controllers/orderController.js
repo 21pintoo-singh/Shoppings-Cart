@@ -79,16 +79,16 @@ const updateOrder = async (req, res) => {
         if (!findOrder)
             return res.status(404).send({ status: false, message: "No such Order found" })
 
-        let orderStatus = req.body.status
-        if (!orderStatus) {
+        let status = req.body.status
+        if (!status) {
             return res.status(200).send({ status: true, data: findOrder })
         }
         else {
             let statusEnum = ["pending", "completed", "cancled"]
-            if (!statusEnum.includes(orderStatus))
+            if (!statusEnum.includes(status))
                 return res.status(400).send({ status: false, message: "Order status should be Pending,completed,cancled" })
 
-            if (orderStatus == "cancled") {
+            if (status == "cancled") {
                 let checkCancellable = await orderModel.findOne({ _id: orderId, cancellable: true })
                 if (!checkCancellable)
                     return res.status(400).send({ status: false, message: "This order cannot be cancelled" })
@@ -101,8 +101,8 @@ const updateOrder = async (req, res) => {
                 return res.status(200).send({ status: true, message: "status updated successfully", data: updateOrder })
 
             }
-            if (orderStatus == "completed") {
-                findOrder.status = orderStatus
+            if (status == "completed") {
+                findOrder.status = status
 
                 let updateCart = await cartModel.findOneAndUpdate({ userId: userId }, { $set: { items: [], totalPrice: 0, totalItems: 0 } }, { new: true })
 
